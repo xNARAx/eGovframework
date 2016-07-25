@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.sqn.www.mnote.mapper.MainMapper">
+
+	<select id="selectGroupList" parameterType="kr.co.sqn.www.mnote.vo.GroupVO" resultType="kr.co.sqn.www.mnote.vo.GroupVO">
+		SELECT GN.GRP_ID
+		      , GN.GRP_NM
+		      , GN.GRP_NM_ENG
+		      , GN.GRP_TEL
+		      , GN.GRP_FAX
+		      , GN.GRP_TYP
+		      , GN.PARENT_ID
+		      , GN.SORT_NO
+		 FROM TB_GROUP_NOTE GN
+		WHERE GN.GRP_TYP = '03'
+		  AND trim(GN.PARENT_ID) = #{grp_id_02} OR GN.PARENT_ID IN (SELECT GRP_ID FROM TB_GROUP_NOTE WHERE trim(PARENT_ID) = #{grp_id_02} AND trim(GRP_GUBUN) = #{grp_gubun})
+		  AND trim(GRP_GUBUN) = #{grp_gubun}
+		ORDER BY GN.SORT_NO
+	</select>
+
+	<select id="selectGroupDetail" parameterType="kr.co.sqn.www.mnote.vo.GroupVO" resultType="kr.co.sqn.www.mnote.vo.GroupVO">
+		SELECT GRP_NM FROM TB_GROUP_NOTE WHERE grp_id = #{grp_id_01} AND trim(GRP_GUBUN) = #{grp_gubun}
+	</select>
+
+	<select id="selectPersonList" resultType="kr.co.sqn.www.mnote.vo.GroupVO" parameterType="kr.co.sqn.www.mnote.vo.GroupVO">
+	    SELECT UN.USER_ID
+			, UN.USER_NM
+		    , UN.POSITION_APPOINT_NM POSITION_NM
+		    , USN.ASSIGNMENT_NM ASSIGNMENT_NM
+		    , FN.FAVORITE_USER_ID
+		    , NVL(FN.FAVORITE_USER_ID,'N') FAVORITE_USER_YN
+		    , UN.TEL
+		    , UN.CELL_TEL
+		    , UN.EMAIL
+		    , NVL(UPN.CELL_TEL_PUBLIC_YN,'Y') CELL_TEL_PUBLIC_YN
+		    , NVL(UPN.EMAIL_PUBLIC_YN,'Y') EMAIL_PUBLIC_YN
+		    , USN.GRP_ID
+		    , USN.GRP_GUBUN
+		    , UN.IMAGE_URL
+		    , MAIN_GRP_ID
+		FROM TB_USER_NOTE UN
+			JOIN ( SELECT B.SORT_NO, A.USER_ID, A.GRP_GUBUN, A.GRP_ID, A.ASSIGNMENT_NM, A.ASSIGNMENT_CD, B.GRP_NM 
+			         FROM TB_USER_GROUP_NOTE A, TB_GROUP_NOTE B
+                    WHERE A.GRP_ID = B.GRP_ID AND A.GRP_GUBUN = B.GRP_GUBUN
+                 ) USN ON trim(UN.USER_ID) = trim(USN.USER_ID) AND trim(USN.GRP_ID) = trim(UN.MAIN_GRP_ID)   
+		  LEFT OUTER JOIN TB_USER_PUBLIC_NOTE UPN ON UN.USER_ID =UPN.USER_ID AND UN.GRP_GUBUN = UPN.GRP_GUBUN
+		  LEFT OUTER JOIN ( SELECT USER_ID, FAVORITE_USER_ID, GRP_GUBUN  FROM TB_FAVORITE_NOTE WHERE USER_ID = #{user_id} ) FN ON UN.USER_ID = FN.FAVORITE_USER_ID AND UN.GRP_GUBUN = FN.GRP_GUBUN
+		WHERE USN.GRP_ID IN 
+		<foreach item="item" index="index" collection="grp_ids"
+		    open="(" separator="," close=")">
+		      #{item}
+		</foreach>
+			AND trim(UN.GRP_GUBUN) = #{grp_gubun}
+		ORDER BY UN.USER_NM
+    </select>
+</mapper>

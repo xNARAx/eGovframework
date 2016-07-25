@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.sqn.www.mnote.mapper.HomeMapper">
+
+	<select id="selectHomeList" parameterType="kr.co.sqn.www.mnote.vo.HomeVO" resultType="kr.co.sqn.www.mnote.vo.HomeVO">
+	
+		SELECT CASE 
+				WHEN ROWNUM <![CDATA[>]]> 8
+		        THEN ROWNUM - 8
+		        WHEN ROWNUM <![CDATA[>]]> 16
+		        THEN ROWNUM - 16
+		        WHEN ROWNUM <![CDATA[>]]> 32
+		        THEN ROWNUM - 32
+		        ELSE rownum
+				END MENUCLASS, 
+				T.GRP_ID, T.GRP_NM, T.GRP_GUBUN
+	    FROM(
+		    SELECT GRP_ID, GRP_NM, GRP_GUBUN
+			FROM TB_GROUP_NOTE
+			WHERE GRP_TYP = #{grp_typ}
+			<if test="parent_id != null"> 
+				AND trim(PARENT_ID) = #{parent_id}
+			</if>
+		ORDER BY SORT_NO) T
+		
+	</select>
+
+	<select id="selectHomeListTotCnt" parameterType="kr.co.sqn.www.mnote.vo.HomeVO" resultType="int">
+
+			SELECT COUNT(*) totcnt
+			FROM SAMPLE
+			WHERE 1=1
+			<if test="searchKeyword != null and searchKeyword != ''">
+		        <choose>
+		            <when test="searchCondition == 0">
+						AND ID LIKE '%' || #{searchKeyword} || '%'
+					</when>
+		            <when test="searchCondition == 1">
+						AND	NAME LIKE '%' || #{searchKeyword} || '%'
+					</when>
+				</choose>
+			</if>
+	</select>
+
+</mapper>

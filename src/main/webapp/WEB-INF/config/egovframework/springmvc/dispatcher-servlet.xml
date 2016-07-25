@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:p="http://www.springframework.org/schema/p"
+        xmlns:context="http://www.springframework.org/schema/context"
+        xmlns:mvc="http://www.springframework.org/schema/mvc"
+        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+                http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+                http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd">
+
+    <context:component-scan base-package="egovframework,kr.co.sqn.www">
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Service"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Repository"/>
+    </context:component-scan>
+	
+
+	<!-- 
+	    *************************************** 
+		아래 구성은 해당 URL 참고
+		http://www.egovframe.go.kr/wiki/doku.php?id=egovframework:rte2:ptl:spring_mvc_tag_configuration
+	-->
+
+    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
+        <property name="webBindingInitializer">
+            <bean class="egovframework.example.cmmn.web.EgovBindingInitializer"/>
+        </property>
+        
+        <!-- @@@  LoginVO Argument 추가 - 2016.07.18 @@@ -->
+        <property name="customArgumentResolvers">
+			<list>
+				<bean class="kr.co.sqn.www.common.resolver.LoginUserArgumentResolver" />
+			</list>
+		</property>
+		
+		<!-- @@@  MessageConverter 추가 - 2016.07.21 @@@ -->
+		<property name="messageConverters">
+			<list>
+				<bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+					<property name="supportedMediaTypes">
+						<list>
+							<value>text/plain;charset=UTF-8</value>
+							<value>application/json;charset=UTF-8</value>
+						</list>
+					</property>
+				</bean>
+			</list>
+		</property>
+    </bean>
+    
+    
+
+    
+    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping">
+        <property name="interceptors">
+            <list>
+                <ref bean="localeChangeInterceptor" />
+            </list>
+        </property>
+    </bean>
+    
+    <bean id="localeResolver" class="org.springframework.web.servlet.i18n.SessionLocaleResolver" />
+    <!-- 쿠키를 이용한 Locale 이용시 <bean id="localeResolver" class="org.springframework.web.servlet.i18n.CookieLocaleResolver"/> -->
+    <bean id="localeChangeInterceptor" class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor">
+        <property name="paramName" value="language" />
+    </bean>
+    
+    
+    <!-- @@@  Interceptor 추가 - 2016.07.18 @@@ -->
+    <mvc:interceptors>
+		<mvc:interceptor>
+			<mvc:mapping path="/note/**" /> <!-- "/**/*.do"  -->
+			<mvc:exclude-mapping path="/gate/**"/>
+			<mvc:exclude-mapping path="/favicon.ico"/>
+			<mvc:exclude-mapping path="/note/login/**"/>
+			<bean class="kr.co.sqn.www.common.interceptor.AuthenticationInterceptor"/>
+		</mvc:interceptor>
+	</mvc:interceptors>
+	
+
+	<!-- Controller 에서 발생한 오류를 화면단 에러 페이지로 리턴 처리 (이렇게 되면 Console에 에러가 안찍힌다.) -->
+	<!-- 
+    <bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+        <property name="defaultErrorView" value="cmmn/egovError"/>
+        <property name="exceptionMappings">
+            <props>
+                <prop key="org.springframework.dao.DataAccessException">cmmn/dataAccessFailure</prop>
+                <prop key="org.springframework.transaction.TransactionException">cmmn/transactionFailure</prop>
+                <prop key="egovframework.rte.fdl.cmmn.exception.EgovBizException">cmmn/egovError</prop>
+                <prop key="org.springframework.security.AccessDeniedException">cmmn/egovError</prop>
+            </props>
+        </property>
+    </bean>
+    -->
+
+
+    <bean class="org.springframework.web.servlet.view.UrlBasedViewResolver" p:order="1"
+	    p:viewClass="org.springframework.web.servlet.view.JstlView"
+	    p:prefix="/WEB-INF/jsp/" p:suffix=".jsp"/>
+
+
+    <!-- For Pagination Tag -->
+    <bean id="imageRenderer" class="egovframework.example.cmmn.web.EgovImgPaginationRenderer"/>
+
+    <bean id="paginationManager" class="egovframework.rte.ptl.mvc.tags.ui.pagination.DefaultPaginationManager">
+        <property name="rendererType">
+            <map>
+                <entry key="image" value-ref="imageRenderer"/>
+            </map>
+        </property>
+    </bean>
+	<!-- /For Pagination Tag -->
+
+
+	<!-- Controller에서 별다른 로직 없이 단순 [ Url <=> Controller <=> View ] 맵핑의 경우 아래 태그를 이용. -->
+	<!-- http://www.egovframe.go.kr/wiki/doku.php?id=egovframework:rte:ptl:security:jakarta_commons_validator -->
+    <mvc:view-controller path="/cmmn/validator.do" view-name="egovframework/example/cmmn/validator"/>
+
+</beans>
